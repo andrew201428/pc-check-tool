@@ -42,30 +42,36 @@
 
           <button class="nav-item" data-section="storage">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="1"></circle>
-              <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 0l4.24-4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08 0l4.24 4.24"></path>
+              <path d="M4 7h16v10H4z"></path>
+              <path d="M8 7V5h8v2"></path>
             </svg>
             <span>Storage</span>
           </button>
 
           <button class="nav-item" data-section="network">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="1"></circle>
-              <circle cx="19" cy="12" r="1"></circle>
-              <circle cx="5" cy="12" r="1"></circle>
-              <line x1="12" y1="5" x2="12" y2="5.01"></line>
-              <line x1="12" y1="19" x2="12" y2="19.01"></line>
+              <path d="M5 12h14"></path>
+              <path d="M12 5v14"></path>
+              <circle cx="12" cy="12" r="8"></circle>
             </svg>
             <span>Network</span>
           </button>
 
           <button class="nav-item" data-section="processes">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="21 8 21 21 3 21 3 8"></polyline>
-              <line x1="1" y1="3" x2="23" y2="3"></line>
-              <path d="M10 12v4M14 12v4"></path>
+              <rect x="3" y="7" width="18" height="12" rx="2" ry="2"></rect>
+              <path d="M8 7V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
             </svg>
             <span>Processes</span>
+          </button>
+
+          <button class="nav-item" data-section="alerts">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 22h20L12 2z"></path>
+              <path d="M12 9v4"></path>
+              <circle cx="12" cy="17" r="1"></circle>
+            </svg>
+            <span>Alerts</span>
           </button>
 
           <button class="nav-item" data-section="export">
@@ -79,7 +85,7 @@
         </nav>
 
         <div class="sidebar-footer">
-          <button id="themeToggleSidebar" class="theme-toggle">
+          <button id="themeToggleSidebar" class="theme-toggle" type="button" aria-label="Toggle theme">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="5"></circle>
               <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -98,11 +104,11 @@
       <main class="main-content">
         <div class="content-header">
           <div>
-            <h1 id="sectionTitle">System Overview</h1>
+            <h1 id="sectionTitle">Overview</h1>
             <p id="sectionDesc" class="subtitle">Real-time diagnostics and system health</p>
           </div>
           <div class="header-actions">
-            <button id="refreshBtn" class="btn btn-primary">
+            <button id="refreshBtn" class="btn btn-primary" type="button">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <polyline points="1 20 1 14 7 14"></polyline>
@@ -113,9 +119,7 @@
           </div>
         </div>
 
-        <div class="content-area" id="contentArea">
-          <!-- Content will be dynamically injected here -->
-        </div>
+        <div class="content-area" id="contentArea"></div>
       </main>
     </div>
 

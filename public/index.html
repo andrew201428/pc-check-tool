@@ -1,54 +1,198 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PC Check Tool</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <div class="page-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Diagnostics Dashboard</p>
-          <h1>PC Check Tool</h1>
-        </div>
-        <button id="refreshBtn" class="primary-btn">Refresh Data</button>
-      </header>
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const { exec } = require('child_process');
+const si = require('systeminformation');
 
-      <main class="content">
-        <section class="summary-grid" id="summaryGrid"></section>
+const app = express();
+const PORT = process.env.PORT || 3000;
+const REPORTS_DIR = path.join(__dirname, 'reports');
 
-        <section class="panel">
-          <div class="panel-header">
-            <h2>System Overview</h2>
-            <button id="saveReportBtn" class="secondary-btn">Save Report</button>
-          </div>
-          <div id="systemOverview" class="info-grid"></div>
-        </section>
+if (!fs.existsSync(REPORTS_DIR)) {
+  fs.mkdirSync(REPORTS_DIR, { recursive: true });
+}
 
-        <section class="panel">
-          <h2>Storage</h2>
-          <div id="storageTable" class="table-wrap"></div>
-        </section>
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-        <section class="panel">
-          <h2>Network</h2>
-          <div id="networkList" class="list-rows"></div>
-        </section>
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
-        <section class="panel">
-          <h2>Top Processes</h2>
-          <div id="processTable" class="table-wrap"></div>
-        </section>
+app.get('/api/system', async (_req, res) => {
+  try {
+    const [
+      osInfo,
+      cpu,
+      mem,
+      fsSize,
+      graphics,
+      networkInterfaces,
+      versions,
+      battery,
+      processes,
+      users,
+      currentLoad,
+      blockDevices
+    ] = await Promise.all([
+      si.osInfo(),
+      si.cpu(),
+      si.mem(),
+      si.fsSize(),
+      si.graphics(),
+      si.networkInterfaces(),
+      si.versions(),
+      si.battery(),
+      si.processes(),
+      si.users(),
+      si.currentLoad(),
+      si.blockDevices()
+    ]);
 
-        <section class="panel">
-          <h2>GPU</h2>
-          <div id="gpuList" class="list-rows"></div>
-        </section>
-      </main>
-    </div>
+    const totalStorage = fsSize.reduce((sum, drive) => sum + (Number(drive.size) || 0), 0);
+    const availableStorage = fsSize.reduce((sum, drive) => sum + (Number(drive.available) || 0), 0);
+    const usedStorage = Math.max(0, totalStorage - availableStorage);
 
-    <script src="/app.js"></script>
-  </body>
-</html>
+    const report = {
+      generatedAt: new Date().toISOString(),
+      os: {
+        platform: process.platform,
+        release: osInfo.release,
+        distro: osInfo.distro || 'Unknown',
+        codename: osInfo.codename || 'Unknown',
+        arch: osInfo.arch || process.arch,
+        kernel: osInfo.kernel || 'Unknown'
+      },
+      cpu: {
+        manufacturer: cpu.manufacturer,
+        brand: cpu.brand,
+        cores: cpu.cores,
+        physicalCores: cpu.physicalCores,
+        speed: cpu.speed,
+        vendor: cpu.vendor,
+        family: cpu.family,
+        model: cpu.model
+      },
+      memory: {
+        total: mem.total,
+        free: mem.free,
+        used: mem.used,
+        active: mem.active,
+        available: mem.available,
+        swapTotal: mem.swaptotal,
+        swapUsed: mem.swapused,
+        swapFree: mem.swapfree
+      },
+      storage: fsSize.map((drive) => ({
+        fs: drive.fs,
+        type: drive.type,
+        size: drive.size,
+        used: drive.used,
+        available: drive.available,
+        mount: drive.mount,
+        use: Number(drive.use) || 0
+      })),
+      totalStorage,
+      usedStorage,
+      availableStorage,
+      graphics: graphics.controllers || graphics || [],
+      network: networkInterfaces.map((nic) => ({
+        name: nic.ifaceName || nic.iface,
+        type: nic.type,
+        mac: nic.mac,
+        ip4: nic.ip4,
+        ip6: nic.ip6,
+        dhcp: nic.dhcp,
+        speed: nic.speed
+      })),
+      versions: {
+        node: versions.node,
+        npm: versions.npm,
+        system: versions.system,
+        python: versions.python || 'Not installed'
+      },
+      battery: battery || null,
+      processes: {
+        total: processes.total,
+        list: (processes.list || []).slice(0, 20).map((p) => ({
+          pid: p.pid,
+          name: p.name,
+          cpu: p.cpu,
+          mem: p.mem,
+          command: p.command
+        }))
+      },
+      users: users || [],
+      load: {
+        currentLoad: currentLoad.currentLoad || 0,
+        currentLoadUser: currentLoad.currentLoadUser || 0,
+        currentLoadSystem: currentLoad.currentLoadSystem || 0
+      },
+      blockDevices: blockDevices || []
+    };
+
+    res.json(report);
+  } catch (error) {
+    console.error('System gather failed:', error);
+    res.status(500).json({
+      error: 'Unable to gather system details.',
+      details: error.message
+    });
+  }
+});
+
+app.post('/api/report', async (req, res) => {
+  try {
+    const snapshot = req.body || {};
+    const fileName = `pc-report-${Date.now()}.json`;
+    const filePath = path.join(REPORTS_DIR, fileName);
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      report: snapshot
+    };
+
+    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf8');
+
+    res.json({
+      success: true,
+      filename: fileName,
+      path: `/reports/${fileName}`
+    });
+  } catch (error) {
+    console.error('Report save failed:', error);
+    res.status(500).json({
+      error: 'Unable to save report.',
+      details: error.message
+    });
+  }
+});
+
+app.post('/api/processes/:pid/kill', (req, res) => {
+  const { pid } = req.params;
+
+  if (!pid) {
+    return res.status(400).json({ success: false, error: 'PID is required.' });
+  }
+
+  const command = process.platform === 'win32'
+    ? `taskkill /PID ${pid} /F`
+    : `kill -9 ${pid}`;
+
+  exec(command, (error) => {
+    if (error) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+
+    res.json({ success: true, pid, command });
+  });
+});
+
+app.use('/reports', express.static(REPORTS_DIR));
+
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`PC check tool running at http://localhost:${PORT}`);
+});
