@@ -1,51 +1,139 @@
 const summaryGrid = document.getElementById('summaryGrid');
 const systemOverview = document.getElementById('systemOverview');
+const performancePanel = document.getElementById('performancePanel');
 const storageTable = document.getElementById('storageTable');
 const networkList = document.getElementById('networkList');
 const processTable = document.getElementById('processTable');
 const gpuList = document.getElementById('gpuList');
 const refreshBtn = document.getElementById('refreshBtn');
 const saveReportBtn = document.getElementById('saveReportBtn');
+const themeToggle = document.getElementById('themeToggle');
+const statusPill = document.getElementById('statusPill');
+const healthMeter = document.getElementById('healthMeter');
+const healthScore = document.getElementById('healthScore');
+const lastUpdatedText = document.getElementById('lastUpdatedText');
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let value = bytes;
-  let i = 0;
-  while (value >= 1024 && i < units.length - 1) {
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
     value /= 1024;
-    i += 1;
+    unitIndex += 1;
   }
-  return `${value.toFixed(1)} ${units[i]}`;
+
+  return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
-function createSummaryCard(label, value, tone = 'normal') {
+function formatPercent(rawValue) {
+  const value = Number(rawValue) || 0;
+  return `${Math.max(0, Math.min(100, value)).toFixed(1)}%`;
+}
+
+function createSummaryCard(label, value, tone = 'neutral') {
   const card = document.createElement('div');
-  card.className = 'card';
+  card.className = 'summary-card';
+
+  const toneMap = {
+    neutral: '#e5eef8',
+    success: 'var(--success)',
+    warn: 'var(--warning)',
+    danger: 'var(--danger)'
+  };
+
   card.innerHTML = `
     <div class="label">${label}</div>
-    <div class="value" style="color:${tone === 'good' ? 'var(--success)' : tone === 'warn' ? 'var(--warning)' : 'var(--text)'};">${value}</div>
+    <div class="value" style="color:${toneMap[tone] || toneMap.neutral};">${value}</div>
   `;
+
   return card;
+}
+
+function computeHealthScore(data) {
+  const memory = data.memory || {};
+  const storage = data.storage || [];
+  const totalStorage = storage.reduce((sum, drive) => sum + (Number(drive.size) || 0), 0);
+  const freeStorage = storage.reduce((sum, drive) => sum + (Number(drive.available) || 0), 0);
+
+  const memoryFreeRatio = (Number(memory.free) || 0) / (Number(memory.total) || 1);
+  const storageFreeRatio = freeStorage / (totalStorage || 1);
+  const rawScore = ((memoryFreeRatio * 0.5) + (storageFreeRatio * 0.5)) * 100;
+
+  return Math.max(0, Math.min(100, Math.round(rawScore)));
+}
+
+function renderPerformance(data) {
+  const memory = data.memory || {};
+  const cpu = data.cpu || {};
+  const battery = data.battery || {};
+
+  const performanceItems = [
+    {
+      label: 'Memory usage',
+      value: formatPercent(((Number(memory.used) || 0) / (Number(memory.total) || 1)) * 100),
+      detail: `${formatBytes(memory.used || 0)} used / ${formatBytes(memory.total || 0)}`
+    },
+    {
+      label: 'CPU',
+      value: cpu.brand || 'Unknown',
+      detail: `${cpu.cores || 'Unknown'} cores`
+    },
+    {
+      label: 'Battery',
+      value: battery.isCharging ? 'Charging' : 'On power',
+      detail: battery.percent ? `${battery.percent}%` : 'Not available'
+    },
+    {
+      label: 'Users',
+      value: `${(data.users || []).length || 0}`,
+      detail: 'Logged in users'
+    }
+  ];
+
+  performancePanel.innerHTML = performanceItems.map((item) => `
+    <div class="performance-item">
+      <div class="row">
+        <span>${item.label}</span>
+        <strong>${item.value}</strong>
+      </div>
+      <small>${item.detail}</small>
+    </div>
+  `).join('');
 }
 
 function renderSystem(data) {
   const os = data.os || {};
   const cpu = data.cpu || {};
   const memory = data.memory || {};
+  const storage = data.storage || [];
+  const network = data.network || [];
+  const processes = data.processes?.list || [];
+  const gpus = data.graphics?.controllers || data.graphics || [];
+
+  const health = computeHealthScore(data);
+  healthMeter.style.width = `${health}%`;
+  healthScore.textContent = `${health}/100`;
+  statusPill.textContent = health >= 70 ? 'Healthy' : health >= 45 ? 'Watch' : 'Low';
+  statusPill.style.background = health >= 70 ? 'rgba(52, 211, 153, 0.12)' : health >= 45 ? 'rgba(251, 191, 36, 0.12)' : 'rgba(251, 113, 133, 0.12)';
+  statusPill.style.color = health >= 70 ? 'var(--success)' : health >= 45 ? 'var(--warning)' : 'var(--danger)';
+  statusPill.style.borderColor = health >= 70 ? 'rgba(52, 211, 153, 0.18)' : health >= 45 ? 'rgba(251, 191, 36, 0.18)' : 'rgba(251, 113, 133, 0.18)';
+
+  const timestamp = new Date(data.generatedAt || Date.now()).toLocaleString();
+  lastUpdatedText.textContent = `Last synced: ${timestamp}`;
 
   summaryGrid.innerHTML = '';
-
-  summaryGrid.appendChild(createSummaryCard('Platform', os.platform || 'Unknown', 'good'));
-  summaryGrid.appendChild(createSummaryCard('OS', `${os.distro || 'Unknown'} ${os.release || ''}`.trim(), 'good'));
+  summaryGrid.appendChild(createSummaryCard('Platform', os.platform || 'Unknown', 'success'));
+  summaryGrid.appendChild(createSummaryCard('OS', `${os.distro || 'Unknown'} ${os.release || ''}`.trim(), 'success'));
   summaryGrid.appendChild(createSummaryCard('CPU', cpu.brand || 'Unknown'));
-  summaryGrid.appendChild(createSummaryCard('Memory', formatBytes(memory.total || 0)));
-  summaryGrid.appendChild(createSummaryCard('Storage', `${(data.storage || []).length} drive(s)`));
-  summaryGrid.appendChild(createSummaryCard('Network', `${(data.network || []).length} adapter(s)`));
+  summaryGrid.appendChild(createSummaryCard('RAM', formatBytes(memory.total || 0), 'neutral'));
+  summaryGrid.appendChild(createSummaryCard('Storage', `${storage.length || 0} drive(s)`));
+  summaryGrid.appendChild(createSummaryCard('Health', `${health}/100`, health >= 70 ? 'success' : health >= 45 ? 'warn' : 'danger'));
 
-  systemOverview.innerHTML = '';
-  const fields = [
+  systemOverview.innerHTML = [
     ['Platform', os.platform || 'Unknown'],
+    ['OS', `${os.distro || 'Unknown'} ${os.release || ''}`.trim() || 'Unknown'],
     ['Kernel', os.kernel || 'Unknown'],
     ['Architecture', os.arch || 'Unknown'],
     ['CPU', cpu.brand || 'Unknown'],
@@ -54,18 +142,16 @@ function renderSystem(data) {
     ['Free RAM', formatBytes(memory.free || 0)],
     ['Available RAM', formatBytes(memory.available || 0)],
     ['Node', data.versions?.node || 'Unknown'],
-    ['System', data.versions?.system || 'Unknown']
-  ];
-
-  fields.forEach(([key, value]) => {
-    const item = document.createElement('div');
-    item.className = 'info-item';
-    item.innerHTML = `
+    ['System', data.versions?.system || 'Unknown'],
+    ['Users', `${(data.users || []).length || 0}`]
+  ].map(([key, value]) => `
+    <div class="info-item">
       <span class="key">${key}</span>
       <span class="value">${value}</span>
-    `;
-    systemOverview.appendChild(item);
-  });
+    </div>
+  `).join('');
+
+  renderPerformance(data);
 
   storageTable.innerHTML = `
     <table>
@@ -80,26 +166,45 @@ function renderSystem(data) {
         </tr>
       </thead>
       <tbody>
-        ${(data.storage || []).map((drive) => `
+        ${(storage || []).map((drive) => `
           <tr>
             <td>${drive.mount || 'Disk'}</td>
             <td>${drive.type || 'Disk'}</td>
             <td>${formatBytes(drive.size || 0)}</td>
             <td>${formatBytes(drive.used || 0)}</td>
             <td>${formatBytes(drive.available || 0)}</td>
-            <td>${drive.use || 0}%</td>
+            <td>${formatPercent(drive.use || 0)}</td>
           </tr>
         `).join('') || '<tr><td colspan="6">No storage data available</td></tr>'}
       </tbody>
     </table>
   `;
 
-  networkList.innerHTML = (data.network || []).map((nic) => `
+  networkList.innerHTML = (network || []).map((nic) => `
     <div class="list-item">
-      <div><strong>${nic.name || 'NIC'}</strong><br/><small>${nic.type || 'Unknown'} </small></div>
-      <div>${nic.ip4 || 'No IPv4'}<br/><small>${nic.mac || 'No MAC'}</small></div>
+      <div>
+        <strong>${nic.name || 'NIC'}</strong><br />
+        <small>${nic.type || 'Unknown'} / ${nic.mac || 'No MAC'}</small>
+      </div>
+      <div style="text-align:right;">
+        <strong>${nic.ip4 || 'No IPv4'}</strong><br />
+        <small>${nic.ip6 || 'No IPv6'}</small>
+      </div>
     </div>
   `).join('') || '<div class="list-item">No network interfaces found.</div>';
+
+  const gpuEntries = Array.isArray(gpus) ? gpus : [gpus].filter(Boolean);
+  gpuList.innerHTML = gpuEntries.map((gpu) => `
+    <div class="list-item">
+      <div>
+        <strong>${gpu.model || gpu.name || 'GPU'}</strong><br />
+        <small>${gpu.vendor || 'Unknown vendor'}</small>
+      </div>
+      <div>
+        <strong>${gpu.vram || gpu.memoryTotal || 'N/A'}</strong>
+      </div>
+    </div>
+  `).join('') || '<div class="list-item">No GPU data available.</div>';
 
   processTable.innerHTML = `
     <table>
@@ -112,7 +217,7 @@ function renderSystem(data) {
         </tr>
       </thead>
       <tbody>
-        ${(data.processes?.list || []).map((proc) => `
+        ${(processes || []).map((proc) => `
           <tr>
             <td>${proc.name || 'Unknown'}</td>
             <td>${proc.pid || 'N/A'}</td>
@@ -123,14 +228,6 @@ function renderSystem(data) {
       </tbody>
     </table>
   `;
-
-  const gpus = data.graphics?.controllers || data.graphics || [];
-  gpuList.innerHTML = (Array.isArray(gpus) ? gpus : [gpus]).map((gpu) => `
-    <div class="list-item">
-      <div><strong>${gpu.model || gpu.name || 'GPU'}</strong></div>
-      <div>${gpu.vram || gpu.memoryTotal || 'Unknown'} </div>
-    </div>
-  `).join('') || '<div class="list-item">No GPU data available.</div>';
 }
 
 async function fetchSystemData() {
@@ -140,7 +237,11 @@ async function fetchSystemData() {
     renderSystem(data);
   } catch (error) {
     console.error('Failed to fetch system data:', error);
-    summaryGrid.innerHTML = '<div class="card"><div class="label">Error</div><div class="value">Unable to load system information</div></div>';
+    summaryGrid.innerHTML = '<div class="summary-card"><div class="label">Error</div><div class="value">Unable to load system information</div></div>';
+    lastUpdatedText.textContent = 'Unable to refresh diagnostics.';
+    statusPill.textContent = 'Error';
+    statusPill.style.background = 'rgba(251, 113, 133, 0.12)';
+    statusPill.style.color = 'var(--danger)';
   }
 }
 
@@ -150,9 +251,7 @@ async function saveReport() {
     const data = await response.json();
     const saveResponse = await fetch('/api/report', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
     const result = await saveResponse.json();
@@ -169,7 +268,20 @@ async function saveReport() {
   }
 }
 
+function applyTheme(theme) {
+  const isLight = theme === 'light';
+  document.body.classList.toggle('light', isLight);
+  themeToggle.textContent = isLight ? '🌙 Dark' : '☀️ Light';
+  localStorage.setItem('pc-check-theme', theme);
+}
+
 refreshBtn.addEventListener('click', fetchSystemData);
 saveReportBtn.addEventListener('click', saveReport);
+themeToggle.addEventListener('click', () => {
+  const nextTheme = document.body.classList.contains('light') ? 'dark' : 'light';
+  applyTheme(nextTheme);
+});
 
+const savedTheme = localStorage.getItem('pc-check-theme') || 'dark';
+applyTheme(savedTheme);
 fetchSystemData();

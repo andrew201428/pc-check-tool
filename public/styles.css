@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PC Check Tool</title>
+    <meta name="description" content="A polished system diagnostics dashboard for viewing hardware, storage, network, and PC health." />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-wrap">
+          <div class="brand-mark">PC</div>
+          <div>
+            <p class="eyebrow">Diagnostics Dashboard</p>
+            <h1>PC Check Tool</h1>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button id="themeToggle" class="ghost-btn" type="button">🌙 Dark</button>
+          <button id="refreshBtn" class="primary-btn" type="button">Refresh</button>
+          <button id="saveReportBtn" class="secondary-btn" type="button">Save Report</button>
+        </div>
+      </header>
+
+      <section class="hero panel">
+        <div class="hero-copy">
+          <span class="status-pill" id="statusPill">Live</span>
+          <h2>System health overview</h2>
+          <p id="lastUpdatedText">Loading diagnostics...</p>
+        </div>
+
+        <div class="health-block">
+          <div class="health-meta">
+            <span>Health score</span>
+            <strong id="healthScore">--</strong>
+          </div>
+          <div class="health-meter">
+            <div id="healthMeter" class="health-fill"></div>
+          </div>
+        </div>
+      </section>
+
+      <main class="content">
+        <section class="summary-grid" id="summaryGrid"></section>
+
+        <div class="two-column">
+          <section class="panel detail-panel">
+            <div class="panel-header">
+              <h3>System Overview</h3>
+            </div>
+            <div id="systemOverview" class="info-grid"></div>
+          </section>
+
+          <section class="panel detail-panel">
+            <div class="panel-header">
+              <h3>Performance Snapshot</h3>
+            </div>
+            <div id="performancePanel" class="performance-grid"></div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Storage</h3>
+          </div>
+          <div id="storageTable" class="table-wrap"></div>
+        </section>
+
+        <div class="two-column">
+          <section class="panel">
+            <div class="panel-header">
+              <h3>Network</h3>
+            </div>
+            <div id="networkList" class="list-rows"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3>GPU</h3>
+            </div>
+            <div id="gpuList" class="list-rows"></div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Top Processes</h3>
+          </div>
+          <div id="processTable" class="table-wrap"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
