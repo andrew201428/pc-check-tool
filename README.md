@@ -7,11 +7,21 @@ const processTable = document.getElementById('processTable');
 const gpuList = document.getElementById('gpuList');
 const refreshBtn = document.getElementById('refreshBtn');
 const saveReportBtn = document.getElementById('saveReportBtn');
+const exportJsonBtn = document.getElementById('exportJsonBtn');
+const exportHtmlBtn = document.getElementById('exportHtmlBtn');
 const themeToggle = document.getElementById('themeToggle');
 const statusPill = document.getElementById('statusPill');
 const healthMeter = document.getElementById('healthMeter');
 const healthScore = document.getElementById('healthScore');
 const lastUpdatedText = document.getElementById('lastUpdatedText');
+const memoryChartBar = document.getElementById('memoryChartBar');
+const storageChartBar = document.getElementById('storageChartBar');
+const healthChartBar = document.getElementById('healthChartBar');
+const memoryChartValue = document.getElementById('memoryChartValue');
+const storageChartValue = document.getElementById('storageChartValue');
+const healthChartValue = document.getElementById('healthChartValue');
+
+let currentReport = null;
 
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
@@ -30,6 +40,10 @@ function formatBytes(bytes) {
 function formatPercent(rawValue) {
   const value = Number(rawValue) || 0;
   return `${Math.max(0, Math.min(100, value)).toFixed(1)}%`;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function createSummaryCard(label, value, tone = 'neutral') {
@@ -61,7 +75,26 @@ function computeHealthScore(data) {
   const storageFreeRatio = freeStorage / (totalStorage || 1);
   const rawScore = ((memoryFreeRatio * 0.5) + (storageFreeRatio * 0.5)) * 100;
 
-  return Math.max(0, Math.min(100, Math.round(rawScore)));
+  return clamp(Math.round(rawScore), 0, 100);
+}
+
+function renderCharts(data) {
+  const memoryUsedPercent = clamp(((Number(data.memory?.used) || 0) / (Number(data.memory?.total) || 1)) * 100, 0, 100);
+  const storageUsedPercent = clamp(
+    ((data.storage || []).reduce((sum, drive) => sum + (Number(drive.used) || 0), 0) /
+      (data.storage || []).reduce((sum, drive) => sum + (Number(drive.size) || 0), 0 || 1)) * 100,
+    0,
+    100
+  );
+  const health = computeHealthScore(data);
+
+  memoryChartBar.style.width = `${memoryUsedPercent}%`;
+  storageChartBar.style.width = `${storageUsedPercent}%`;
+  healthChartBar.style.width = `${health}%`;
+
+  memoryChartValue.textContent = formatPercent(memoryUsedPercent);
+  storageChartValue.textContent = formatPercent(storageUsedPercent);
+  healthChartValue.textContent = `${health}/100`;
 }
 
 function renderPerformance(data) {
@@ -104,6 +137,7 @@ function renderPerformance(data) {
 }
 
 function renderSystem(data) {
+  currentReport = data;
   const os = data.os || {};
   const cpu = data.cpu || {};
   const memory = data.memory || {};
@@ -152,6 +186,7 @@ function renderSystem(data) {
   `).join('');
 
   renderPerformance(data);
+  renderCharts(data);
 
   storageTable.innerHTML = `
     <table>
@@ -268,6 +303,84 @@ async function saveReport() {
   }
 }
 
+function downloadFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportJson() {
+  if (!currentReport) {
+    alert('No report data available yet.');
+    return;
+  }
+
+  const json = JSON.stringify(currentReport, null, 2);
+  downloadFile(`pc-check-report-${Date.now()}.json`, json, 'application/json');
+}
+
+function exportHtml() {
+  if (!currentReport) {
+    alert('No report data available yet.');
+    return;
+  }
+
+  const health = computeHealthScore(currentReport);
+  const storageText = (currentReport.storage || []).map((drive) => `
+    <tr>
+      <td>${drive.mount || 'Disk'}</td>
+      <td>${drive.type || 'Disk'}</td>
+      <td>${formatBytes(drive.size || 0)}</td>
+      <td>${formatBytes(drive.used || 0)}</td>
+      <td>${formatBytes(drive.available || 0)}</td>
+      <td>${formatPercent(drive.use || 0)}</td>
+    </tr>
+  `).join('');
+
+  const html = `<!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="UTF-8" />
+      <title>PC Check Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 32px; color: #111827; }
+        h1 { margin-bottom: 0; }
+        .meta { color: #475569; margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }
+        th { background: #f3f4f6; }
+      </style>
+    </head>
+    <body>
+      <h1>PC Check Report</h1>
+      <div class="meta">Generated: ${new Date(currentReport.generatedAt || Date.now()).toLocaleString()}</div>
+      <p><strong>System:</strong> ${currentReport.os?.distro || 'Unknown'} ${currentReport.os?.release || ''}</p>
+      <p><strong>CPU:</strong> ${currentReport.cpu?.brand || 'Unknown'}</p>
+      <p><strong>Health score:</strong> ${health}/100</p>
+      <h2>Storage</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Drive</th>
+            <th>Type</th>
+            <th>Size</th>
+            <th>Used</th>
+            <th>Available</th>
+            <th>Used %</th>
+          </tr>
+        </thead>
+        <tbody>${storageText}</tbody>
+      </table>
+    </body>
+  </html>`;
+
+  downloadFile(`pc-check-report-${Date.now()}.html`, html, 'text/html');
+}
+
 function applyTheme(theme) {
   const isLight = theme === 'light';
   document.body.classList.toggle('light', isLight);
@@ -277,6 +390,8 @@ function applyTheme(theme) {
 
 refreshBtn.addEventListener('click', fetchSystemData);
 saveReportBtn.addEventListener('click', saveReport);
+exportJsonBtn.addEventListener('click', exportJson);
+exportHtmlBtn.addEventListener('click', exportHtml);
 themeToggle.addEventListener('click', () => {
   const nextTheme = document.body.classList.contains('light') ? 'dark' : 'light';
   applyTheme(nextTheme);

@@ -304,6 +304,62 @@ h1 {
   line-height: 1.2;
 }
 
+.chart-panel {
+  padding: 18px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.metric-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.metric-head strong {
+  color: var(--text);
+  font-size: 1rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.meter-track {
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--meter-bg);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.meter-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  transition: width 0.25s ease;
+}
+
+.meter-blue { background: linear-gradient(90deg, #60a5fa, #38bdf8); }
+.meter-cyan { background: linear-gradient(90deg, #2dd4bf, #67e8f9); }
+.meter-green { background: linear-gradient(90deg, #34d399, #86efac); }
+
 .two-column {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

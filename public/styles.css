@@ -25,6 +25,8 @@
           <button id="themeToggle" class="ghost-btn" type="button">🌙 Dark</button>
           <button id="refreshBtn" class="primary-btn" type="button">Refresh</button>
           <button id="saveReportBtn" class="secondary-btn" type="button">Save Report</button>
+          <button id="exportJsonBtn" class="secondary-btn" type="button">Export JSON</button>
+          <button id="exportHtmlBtn" class="secondary-btn" type="button">Export HTML</button>
         </div>
       </header>
 
@@ -48,6 +50,43 @@
 
       <main class="content">
         <section class="summary-grid" id="summaryGrid"></section>
+
+        <section class="panel chart-panel">
+          <div class="panel-header">
+            <h3>Performance Charts</h3>
+          </div>
+          <div class="charts-grid">
+            <div class="chart-card">
+              <div class="metric-head">
+                <span>Memory usage</span>
+                <strong id="memoryChartValue">--</strong>
+              </div>
+              <div class="meter-track">
+                <div id="memoryChartBar" class="meter-fill meter-blue"></div>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <div class="metric-head">
+                <span>Storage usage</span>
+                <strong id="storageChartValue">--</strong>
+              </div>
+              <div class="meter-track">
+                <div id="storageChartBar" class="meter-fill meter-cyan"></div>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <div class="metric-head">
+                <span>Health score</span>
+                <strong id="healthChartValue">--</strong>
+              </div>
+              <div class="meter-track">
+                <div id="healthChartBar" class="meter-fill meter-green"></div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <div class="two-column">
           <section class="panel detail-panel">
