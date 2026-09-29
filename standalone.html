@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PC Check Tool - Standalone</title>
+  <meta name="description" content="Professional system diagnostics dashboard (Client-side only)." />
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg-alt: #0d1728;
+      --sidebar: #0a141f;
+      --panel: rgba(15, 23, 42, 0.8);
+      --panel-strong: rgba(17, 24, 39, 0.9);
+      --panel-soft: rgba(15, 23, 42, 0.55);
+      --line: rgba(148, 163, 184, 0.18);
+      --line-strong: rgba(148, 163, 184, 0.3);
+      --text: #e5eef8;
+      --muted: #9fb2c7;
+      --accent: #67e8f9;
+      --accent-strong: #38bdf8;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #fb7185;
+      --shadow: rgba(2, 6, 23, 0.55);
+      --card: rgba(15, 23, 42, 0.72);
+      --chip: rgba(103, 232, 249, 0.12);
+    }
+
+    body.light {
+      --bg: #edf6ff;
+      --bg-alt: #dfeaf7;
+      --sidebar: #e0eaf7;
+      --panel: rgba(255, 255, 255, 0.9);
+      --panel-strong: rgba(255, 255, 255, 0.98);
+      --panel-soft: rgba(255, 255, 255, 0.85);
+      --line: rgba(15, 23, 42, 0.08);
+      --line-strong: rgba(15, 23, 42, 0.12);
+      --text: #102033;
+      --muted: #52657f;
+      --accent: #0ea5e9;
+      --accent-strong: #0284c7;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #e11d48;
+      --shadow: rgba(15, 23, 42, 0.12);
+      --card: rgba(255, 255, 255, 0.8);
+      --chip: rgba(14, 165, 233, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 100%);
+      color: var(--text);
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    button { border: none; cursor: pointer; font: inherit; }
+    a { color: inherit; }
+
+    .app-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 240px;
+      height: 100vh;
+      background: var(--sidebar);
+      border-right: 1px solid var(--line);
+      padding: 22px 12px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      padding: 4px 8px 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .logo svg { stroke: currentColor; }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.18s ease;
+      font-weight: 600;
+    }
+
+    .nav-item:hover {
+      background: rgba(148, 163, 184, 0.08);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--accent);
+      color: #04131e;
+    }
+
+    .nav-item svg {
+      stroke: currentColor;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      display: flex;
+      justify-content: center;
+    }
+
+    .theme-toggle {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(148, 163, 184, 0.08);
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      transition: all 0.18s ease;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--text);
+    }
+
+    .main-content {
+      margin-left: 240px;
+      padding: 28px 32px 40px;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 100%);
+    }
+
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 26px;
+    }
+
+    .content-header h1 {
+      margin: 0 0 4px;
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .header-actions { display: flex; gap: 12px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 15px;
+      border-radius: 12px;
+      font-weight: 700;
+      transition: transform 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #04131e;
+      box-shadow: 0 12px 22px rgba(56, 189, 248, 0.28);
+    }
+
+    .btn-secondary {
+      background: rgba(103, 232, 249, 0.12);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+
+    .content-area {
+      display: grid;
+      gap: 22px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 18px 40px var(--shadow);
+      padding: 20px;
+    }
+
+    .hero-section {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 18px;
+    }
+
+    .hero-info {
+      display: grid;
+      gap: 10px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .health-block {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .health-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.75rem;
+    }
+
+    .health-meta strong {
+      color: var(--text);
+      font-size: 2rem;
+    }
+
+    .health-meter {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .health-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--success), var(--accent), var(--warning));
+    }
+
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      min-height: 110px;
+      display: grid;
+      align-content: center;
+    }
+
+    .card-label {
+      color: var(--muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: clamp(1.3rem, 2vw, 2rem);
+      font-weight: 800;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .metric-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    .metric-head strong {
+      color: var(--text);
+      font-size: 1rem;
+      text-transform: none;
+    }
+
+    .meter-track {
+      width: 100%;
+      height: 14px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      transition: width 0.25s ease;
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 22px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .info-item {
+      padding: 12px 14px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    .info-item .key {
+      display: block;
+      color: var(--muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .info-item .value {
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 620px;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .list-rows {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    .list-item small { color: var(--muted); }
+
+    .performance-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .performance-item {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 1px solid var(--line);
+    }
+
+    .performance-item .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .performance-item small {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+    }
+
+    .export-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .export-btn {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: left;
+      display: grid;
+      gap: 8px;
+      transition: border-color 0.18s ease;
+    }
+
+    .export-btn:hover {
+      border-color: var(--accent);
+    }
+
+    .export-btn .icon { font-size: 1.8rem; }
+    .export-btn .label { font-weight: 800; }
+    .export-btn .desc { color: var(--muted); font-size: 0.8rem; }
+
+    .alert-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+    }
+
+    .alert-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .alert-card .a-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.7rem;
+    }
+
+    .alert-card .a-value {
+      margin-top: 8px;
+      font-size: 1.4rem;
+      font-weight: 800;
+    }
+
+    .alert-card .a-status {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--card);
+      border: 1px solid var(--line);
+    }
+
+    .bar-mini {
+      width: 120px;
+      height: 8px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-mini > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--success), var(--accent));
+    }
+
+    .demo-notice {
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 1024px) {
+      .app-layout { grid-template-columns: 1fr; }
+      .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+      }
+      .main-content {
+        margin-left: 0;
+      }
+      .hero-section, .two-column { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .main-content { padding: 20px 16px 32px; }
+      .content-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .header-actions { width: 100%; }
+      .btn { flex: 1; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="2" y1="17" x2="22" y2="17"></line>
+            <line x1="6" y1="21" x2="18" y2="21"></line>
+          </svg>
+          <span>PC Check</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-section="overview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+            <path d="M21 3v5h-5"></path>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+            <path d="M3 21v-5h5"></path>
+          </svg>
+          <span>Overview</span>
+        </button>
+
+        <button class="nav-item" data-section="hardware">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="1"></circle>
+            <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 0l4.24-4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08 0l4.24 4.24"></path>
+          </svg>
+          <span>Hardware</span>
+        </button>
+
+        <button class="nav-item" data-section="storage">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 7h16v10H4z"></path>
+            <path d="M8 7V5h8v2"></path>
+          </svg>
+          <span>Storage</span>
+        </button>
+
+        <button class="nav-item" data-section="network">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14"></path>
+            <path d="M12 5v14"></path>
+            <circle cx="12" cy="12" r="8"></circle>
+          </svg>
+          <span>Network</span>
+        </button>
+
+        <button class="nav-item" data-section="alerts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 22h20L12 2z"></path>
+            <path d="M12 9v4"></path>
+            <circle cx="12" cy="17" r="1"></circle>
+          </svg>
+          <span>Alerts</span>
+        </button>
+
+        <button class="nav-item" data-section="export">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Export</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="themeToggleSidebar" class="theme-toggle" type="button" aria-label="Toggle theme">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="content-header">
+        <div>
+          <h1 id="sectionTitle">Overview</h1>
+          <p id="sectionDesc" class="subtitle">Real-time diagnostics and system health</p>
+        </div>
+        <div class="header-actions">
+          <button id="refreshBtn" class="btn btn-primary" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="content-area" id="contentArea"></div>
+    </main>
+  </div>
+
+  <script>
+    // ============ STATE ============
+    const refreshBtn = document.getElementById('refreshBtn');
+    const contentArea = document.getElementById('contentArea');
+    const sectionTitle = document.getElementById('sectionTitle');
+    const sectionDesc = document.getElementById('sectionDesc');
+    const navItems = document.querySelectorAll('.nav-item');
+    const themeToggleSidebar = document.getElementById('themeToggleSidebar');
+
+    let currentReport = null;
+    let currentSection = 'overview';
+
+    // ============ MOCK DATA GENERATOR ============
+    function generateMockSystemData() {
+      const now = new Date();
+      return {
+        generatedAt: now.toISOString(),
+        os: {
+          platform: 'win32',
+          release: '10.0.22621',
+          distro: 'Windows',
+          codename: 'Windows 10/11',
+          arch: 'x64',
+          kernel: 'Windows'
+        },
+        cpu: {
+          manufacturer: 'Intel',
+          brand: 'Intel Core i7-13700K',
+          cores: 16,
+          physicalCores: 8,
+          speed: 3.4,
+          vendor: 'GenuineIntel',
+          family: 6,
+          model: 173
+        },
+        memory: {
+          total: 34359738368, // 32GB
+          free: 12884901888, // 12GB
+          used: 21474836480, // 20GB
+          active: 18253611008,
+          available: 13200384000,
+          swapTotal: 4294967296,
+          swapUsed: 1073741824,
+          swapFree: 3221225472
+        },
+        storage: [
+          {
+            fs: 'C:',
+            type: 'NTFS',
+            size: 1099511627776, // 1TB
+            used: 549755813888, // 512GB
+            available: 549755813888,
+            use: 50,
+            mount: 'C:'
+          },
+          {
+            fs: 'D:',
+            type: 'NTFS',
+            size: 2199023255552, // 2TB
+            used: 1099511627776, // 1TB
+            available: 1099511627776,
+            use: 50,
+            mount: 'D:'
+          }
+        ],
+        graphics: {
+          controllers: [
+            {
+              model: 'NVIDIA GeForce RTX 4080',
+              vendor: 'NVIDIA',
+              vram: '12GB'
+            }
+          ]
+        },
+        network: [
+          {
+            name: 'Ethernet',
+            type: 'wired',
+            mac: '00:1A:2B:3C:4D:5E',
+            ip4: '192.168.1.100',
+            ip6: 'fe80::1',
+            dhcp: true,
+            speed: 1000
+          },
+          {
+            name: 'WiFi',
+            type: 'wireless',
+            mac: '00:1A:2B:3C:4D:5F',
+            ip4: '192.168.1.101',
+            ip6: 'fe80::2',
+            dhcp: true,
+            speed: 150
+          }
+        ],
+        versions: {
+          node: 'N/A (Client-side only)',
+          npm: 'N/A (Client-side only)',
+          system: '10.0.22621',
+          python: 'Not installed'
+        },
+        battery: {
+          hasbattery: true,
+          percent: 85,
+          charging: false,
+          acconnected: false
+        },
+        processes: {
+          total: 247,
+          list: [
+            { pid: 1234, name: 'chrome.exe', cpu: 12.5, mem: 1024, command: 'chrome.exe' },
+            { pid: 5678, name: 'vscode.exe', cpu: 8.2, mem: 512, command: 'vscode.exe' },
+            { pid: 9012, name: 'discord.exe', cpu: 3.1, mem: 256, command: 'discord.exe' },
+            { pid: 3456, name: 'explorer.exe', cpu: 2.0, mem: 128, command: 'explorer.exe' },
+            { pid: 7890, name: 'Spotify.exe', cpu: 1.5, mem: 96, command: 'Spotify.exe' }
+          ]
+        },
+        load: {
+          currentLoad: 25.3,
+          currentLoadUser: 15.2,
+          currentLoadSystem: 10.1
+        }
+      };
+    }
+
+    // ============ UTILITIES ============
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      let value = bytes;
+      let unitIndex = 0;
+      while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+      }
+      return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    }
+
+    function formatPercent(rawValue) {
+      const value = Number(rawValue) || 0;
+      return `${Math.max(0, Math.min(100, value)).toFixed(1)}%`;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function computeHealthScore(data) {
+      const memory = data.memory || {};
+      const storage = data.storage || [];
+      const totalStorage = storage.reduce((sum, drive) => sum + (Number(drive.size) || 0), 0);
+      const freeStorage = storage.reduce((sum, drive) => sum + (Number(drive.available) || 0), 0);
+
+      const memoryFreeRatio = (Number(memory.free) || 0) / (Number(memory.total) || 1);
+      const storageFreeRatio = freeStorage / (totalStorage || 1);
+      const rawScore = ((memoryFreeRatio * 0.5) + (storageFreeRatio * 0.5)) * 100;
+      return clamp(Math.round(rawScore), 0, 100);
+    }
+
+    function getLocalHistory() {
+      try {
+        const raw = localStorage.getItem('pc-check-history');
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveHistory(data) {
+      const history = getLocalHistory();
+      const snapshot = {
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        health: computeHealthScore(data),
+        memory: clamp(((Number(data.memory?.used) || 0) / (Number(data.memory?.total) || 1)) * 100, 0, 100),
+        storage: clamp(
+          ((data.storage || []).reduce((sum, drive) => sum + (Number(drive.used) || 0), 0) /
+          ((data.storage || []).reduce((sum, drive) => sum + (Number(drive.size) || 0), 0) || 1)) * 100,
+          0,
+          100
+        )
+      };
+
+      const nextHistory = [...history, snapshot].slice(-10);
+      localStorage.setItem('pc-check-history', JSON.stringify(nextHistory));
+    }
+
+    // ============ RENDER FUNCTIONS ============
+    function renderOverview(data) {
+      const os = data.os || {};
+      const cpu = data.cpu || {};
+      const memory = data.memory || {};
+      const storage = data.storage || [];
+      const battery = data.battery || {};
+      const health = computeHealthScore(data);
+      const memoryUsed = clamp(((Number(memory.used) || 0) / (Number(memory.total) || 1)) * 100, 0, 100);
+      const storageUsed = clamp(
+        ((storage.reduce((sum, drive) => sum + (Number(drive.used) || 0), 0)) /
+        ((storage.reduce((sum, drive) => sum + (Number(drive.size) || 0), 0) || 1))) * 100,
+        0,
+        100
+      );
+      const statusText = health >= 70 ? 'Healthy' : health >= 45 ? 'Watch' : 'Low';
+      const statusStyle = health >= 70 ? 'rgba(52, 211, 153, 0.12)' : health >= 45 ? 'rgba(251, 191, 36, 0.12)' : 'rgba(251, 113, 133, 0.12)';
+      const statusColor = health >= 70 ? 'var(--success)' : health >= 45 ? 'var(--warning)' : 'var(--danger)';
+
+      contentArea.innerHTML = `
+        <div class="demo-notice">⚠️ <strong>Demo Mode:</strong> Showing simulated system data (client-side only). For real system data, use the server version.</div>
+        <div class="section">
+          <div class="panel hero-section">
+            <div class="hero-info">
+              <span class="status-pill" style="background: ${statusStyle}; color: ${statusColor};">${statusText}</span>
+              <h2 style="margin: 0; font-size: 1.6rem;">System is ${statusText.toLowerCase()}</h2>
+              <p style="margin: 0; color: var(--muted);">Last synced: ${new Date(data.generatedAt || Date.now()).toLocaleString()}</p>
+            </div>
+            <div class="health-block">
+              <div class="health-meta">
+                <span>Health</span>
+                <strong>${health}/100</strong>
+              </div>
+              <div class="health-meter">
+                <div class="health-fill" style="width: ${health}%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h3>Quick Stats</h3>
+            </div>
+            <div class="grid-cards">
+              <div class="card">
+                <div class="card-label">Platform</div>
+                <div class="card-value">${data.os?.platform || 'Unknown'}</div>
+              </div>
+              <div class="card">
+                <div class="card-label">CPU</div>
+                <div class="card-value">${(cpu.brand || 'Unknown').split(' ')[0]}</div>
+              </div>
+              <div class="card">
+                <div class="card-label">Total RAM</div>
+                <div class="card-value">${formatBytes(memory.total || 0)}</div>
+              </div>
+              <div class="card">
+                <div class="card-label">Free RAM</div>
+                <div class="card-value" style="color: var(--success);">${formatBytes(memory.free || 0)}</div>
+              </div>
+              <div class="card">
+                <div class="card-label">Cores</div>
+                <div class="card-value">${cpu.cores || 'Unknown'}</div>
+              </div>
+              <div class="card">
+                <div class="card-label">Drives</div>
+                <div class="card-value">${storage.length || 0}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h3>Performance Metrics</h3>
+            </div>
+            <div class="charts-grid">
+              <div class="chart-card">
+                <div class="metric-head">
+                  <span>Memory</span>
+                  <strong>${formatPercent(memoryUsed)}</strong>
+                </div>
+                <div class="meter-track">
+                  <div class="meter-fill" style="width: ${memoryUsed}%; background: linear-gradient(90deg, #60a5fa, #38bdf8);"></div>
+                </div>
+              </div>
+              <div class="chart-card">
+                <div class="metric-head">
+                  <span>Storage</span>
+                  <strong>${formatPercent(storageUsed)}</strong>
+                </div>
+                <div class="meter-track">
+                  <div class="meter-fill" style="width: ${storageUsed}%; background: linear-gradient(90deg, #2dd4bf, #67e8f9);"></div>
+                </div>
+              </div>
+              <div class="chart-card">
+                <div class="metric-head">
+                  <span>Battery</span>
+                  <strong>${battery.percent ? `${battery.percent}%` : 'N/A'}</strong>
+                </div>
+                <div class="meter-track">
+                  <div class="meter-fill" style="width: ${(battery.percent || 0)}%; background: linear-gradient(90deg, #fbbf24, #f59e0b);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderHardware(data) {
+      const os = data.os || {};
+      const cpu = data.cpu || {};
+      const memory = data.memory || {};
+      const gpus = data.graphics?.controllers || data.graphics || [];
+      const gpuEntries = Array.isArray(gpus) ? gpus : [gpus].filter(Boolean);
+
+      contentArea.innerHTML = `
+        <div class="demo-notice">⚠️ <strong>Demo Mode:</strong> Showing simulated system data.</div>
+        <div class="section">
+          <div class="panel">
+            <div class="panel-header"><h3>System Information</h3></div>
+            <div class="info-grid">
+              <div class="info-item"><span class="key">OS</span><span class="value">${os.distro || 'Unknown'} ${os.release || ''}</span></div>
+              <div class="info-item"><span class="key">Kernel</span><span class="value">${os.kernel || 'Unknown'}</span></div>
+              <div class="info-item"><span class="key">Architecture</span><span class="value">${os.arch || 'Unknown'}</span></div>
+              <div class="info-item"><span class="key">Platform</span><span class="value">${os.platform || 'Unknown'}</span></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h3>CPU Details</h3></div>
+            <div class="info-grid">
+              <div class="info-item"><span class="key">Brand</span><span class="value">${cpu.brand || 'Unknown'}</span></div>
+              <div class="info-item"><span class="key">Cores</span><span class="value">${cpu.cores || 'Unknown'}</span></div>
+              <div class="info-item"><span class="key">Logical Processors</span><span class="value">${cpu.physicalCores || 'Unknown'}</span></div>
+              <div class="info-item"><span class="key">Speed</span><span class="value">${cpu.speed ? `${cpu.speed} GHz` : 'Unknown'}</span></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h3>Memory</h3></div>
+            <div class="info-grid">
+              <div class="info-item"><span class="key">Total</span><span class="value">${formatBytes(memory.total || 0)}</span></div>
+              <div class="info-item"><span class="key">Used</span><span class="value">${formatBytes(memory.used || 0)}</span></div>
+              <div class="info-item"><span class="key">Free</span><span class="value">${formatBytes(memory.free || 0)}</span></div>
+              <div class="info-item"><span class="key">Available</span><span class="value">${formatBytes(memory.available || 0)}</span></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h3>GPU</h3></div>
+            <div class="list-rows">
+              ${gpuEntries.map((gpu) => `
+                <div class="list-item">
+                  <div><strong>${gpu.model || gpu.name || 'GPU'}</strong><br><small>${gpu.vendor || 'Unknown'}</small></div>
+                  <div><strong>${gpu.vram || gpu.memoryTotal || 'N/A'}</strong></div>
+                </div>
+              `).join('') || '<div class="list-item">No GPU data available</div>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStorage(data) {
+      const storage = data.storage || [];
+      contentArea.innerHTML = `
+        <div class="demo-notice">⚠️ <strong>Demo Mode:</strong> Showing simulated storage data.</div>
+        <div class="section">
+          <div class="panel">
+            <div class="panel-header"><h3>Storage Drives</h3></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Drive</th><th>Type</th><th>Size</th><th>Used</th><th>Available</th><th>Used %</th></tr>
+                </thead>
+                <tbody>
+                  ${(storage || []).map((drive) => `
+                    <tr>
+                      <td>${drive.mount || 'Disk'}</td>
+                      <td>${drive.type || 'Disk'}</td>
+                      <td>${formatBytes(drive.size || 0)}</td>
+                      <td>${formatBytes(drive.used || 0)}</td>
+                      <td>${formatBytes(drive.available || 0)}</td>
+                      <td>${formatPercent(drive.use || 0)}</td>
+                    </tr>
+                  `).join('') || '<tr><td colspan="6">No storage data</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderNetwork(data) {
+      const network = data.network || [];
+      contentArea.innerHTML = `
+        <div class="demo-notice">⚠️ <strong>Demo Mode:</strong> Showing simulated network data.</div>
+        <div class="section">
+          <div class="panel">
+            <div class="panel-header"><h3>Network Interfaces</h3></div>
+            <div class="list-rows">
+              ${(network || []).map((nic) => `
+                <div class="list-item">
+                  <div><strong>${nic.name || 'NIC'}</strong><br><small>${nic.type || 'Unknown'} • ${nic.mac || 'No MAC'}</small></div>
+                  <div style="text-align: right;"><strong>${nic.ip4 || 'No IPv4'}</strong><br><small>${nic.ip6 || 'No IPv6'}</small></div>
+                </div>
+              `).join('') || '<div class="list-item">No network interfaces found</div>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAlerts(data) {
+      const health = computeHealthScore(data);
+      const memoryUsed = clamp(((Number(data.memory?.used) || 0) / (Number(data.memory?.total) || 1)) * 100, 0, 100);
+      const storageUsed = clamp(
+        ((data.storage || []).reduce((sum, drive) => sum + (Number(drive.used) || 0), 0) /
+         ((data.storage || []).reduce((sum, drive) => sum + (Number(drive.size) || 0), 0) || 1)) * 100,
+        0,
+        100
+      );
+      const cpuLoad = Number(data.load?.currentLoad || 0);
+      const batteryPercent = Number(data.battery?.percent || 0);
+
+      const alerts = [
+        { label: 'Health Score', value: `${health}/100`, status: health >= 70 ? 'Healthy' : health >= 45 ? 'Watch' : 'Critical', tone: health >= 70 ? 'success' : health >= 45 ? 'warning' : 'danger' },
+        { label: 'Memory', value: formatPercent(memoryUsed), status: memoryUsed < 75 ? 'Healthy' : memoryUsed < 90 ? 'Watch' : 'High', tone: memoryUsed < 75 ? 'success' : memoryUsed < 90 ? 'warning' : 'danger' },
+        { label: 'Storage', value: formatPercent(storageUsed), status: storageUsed < 75 ? 'Healthy' : storageUsed < 90 ? 'Watch' : 'High', tone: storageUsed < 75 ? 'success' : storageUsed < 90 ? 'warning' : 'danger' },
+        { label: 'CPU Load', value: `${cpuLoad.toFixed(1)}%`, status: cpuLoad < 75 ? 'Healthy' : cpuLoad < 90 ? 'Watch' : 'Critical', tone: cpuLoad < 75 ? 'success' : cpuLoad < 90 ? 'warning' : 'danger' },
+        { label: 'Battery', value: `${batteryPercent}%`, status: batteryPercent > 20 ? 'Healthy' : 'Low', tone: batteryPercent > 20 ? 'success' : 'warning' }
+      ];
+
+      const history = getLocalHistory();
+
+      contentArea.innerHTML = `
+        <div class="demo-notice">⚠️ <strong>Demo Mode:</strong> Showing simulated alerts.</div>
+        <div class="section">
+          <div class="panel">
+            <div class="panel-header"><h3>System Alerts</h3></div>
+            <div class="alert-grid">
+              ${alerts.map((alert) => {
+                const bgStyle = alert.tone === 'success' ? 'background: rgba(52,211,153,0.12); color: var(--success);' : 
+                               alert.tone === 'warning' ? 'background: rgba(251,191,36,0.12); color: var(--warning);' : 
+                               'background: rgba(251,113,133,0.12); color: var(--danger);';
+                return `
+                  <div class="alert-card">
+                    <div class="a-label">${alert.label}</div>
+                    <div class="a-value">${alert.value}</div>
+                    <span class="a-status" style="${bgStyle}">${alert.status}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h3>Recent History</h3></div>
+            <div class="history-list">
+              ${(history.length ? history : [{ time: 'No history yet', health: 0, memory: 0, storage: 0 }]).map((entry) => `
+                <div class="history-item">
+                  <div>
+                    <strong>${entry.time}</strong><br>
+                    <small>Health ${entry.health || 0}%</small>
+                  </div>
+                  <div class="bar-mini"><span style="width: ${(entry.health || 0)}%"></span></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderExport() {
+      contentArea.innerHTML = `
+        <div class="demo-notice">⚠️ <strong>Demo Mode:</strong> Download simulated data. For real system data export, use the server version.</div>
+        <div class="section">
+          <div class="panel">
+            <div class="panel-header"><h3>Export Report</h3></div>
+            <p style="margin: 0 0 18px; color: var(--muted);">Download a snapshot of the current system state.</p>
+            <div class="export-actions">
+              <button class="export-btn" id="exportJsonAction" type="button">
+                <div class="icon">📋</div>
+                <div class="label">JSON</div>
+                <div class="desc">Raw system data</div>
+              </button>
+              <button class="export-btn" id="exportHtmlAction" type="button">
+                <div class="icon">📄</div>
+                <div class="label">HTML</div>
+                <div class="desc">Readable report</div>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('exportJsonAction').addEventListener('click', exportJson);
+      document.getElementById('exportHtmlAction').addEventListener('click', exportHtml);
+    }
+
+    // ============ EXPORT FUNCTIONS ============
+    function downloadFile(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportJson() {
+      if (!currentReport) return alert('No report data available yet.');
+      const json = JSON.stringify(currentReport, null, 2);
+      downloadFile(`pc-check-report-${Date.now()}.json`, json, 'application/json');
+    }
+
+    function exportHtml() {
+      if (!currentReport) return alert('No report data available yet.');
+      const health = computeHealthScore(currentReport);
+      const storageText = (currentReport.storage || []).map((drive) => `
+        <tr>
+          <td>${drive.mount || 'Disk'}</td>
+          <td>${drive.type || 'Disk'}</td>
+          <td>${formatBytes(drive.size || 0)}</td>
+          <td>${formatBytes(drive.used || 0)}</td>
+          <td>${formatBytes(drive.available || 0)}</td>
+          <td>${formatPercent(drive.use || 0)}</td>
+        </tr>`).join('');
+
+      const html = `<!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <title>PC Check Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 32px; color: #111827; }
+            h1 { margin-bottom: 8px; }
+            .meta { color: #475569; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }
+            th { background: #f3f4f6; }
+          </style>
+        </head>
+        <body>
+          <h1>PC Check Report</h1>
+          <div class="meta">Generated: ${new Date(currentReport.generatedAt || Date.now()).toLocaleString()}</div>
+          <p><strong>System:</strong> ${currentReport.os?.distro || 'Unknown'} ${currentReport.os?.release || ''}</p>
+          <p><strong>CPU:</strong> ${currentReport.cpu?.brand || 'Unknown'}</p>
+          <p><strong>Health Score:</strong> ${health}/100</p>
+          <table>
+            <thead>
+              <tr><th>Drive</th><th>Type</th><th>Size</th><th>Used</th><th>Available</th><th>Used %</th></tr>
+            </thead>
+            <tbody>${storageText}</tbody>
+          </table>
+        </body>
+      </html>`;
+
+      downloadFile(`pc-check-report-${Date.now()}.html`, html, 'text/html');
+    }
+
+    // ============ DATA LOADING ============
+    function loadSystemData() {
+      currentReport = generateMockSystemData();
+      saveHistory(currentReport);
+      renderSection(currentSection);
+    }
+
+    function renderSection(section) {
+      currentSection = section;
+      navItems.forEach((item) => item.classList.toggle('active', item.dataset.section === section));
+      const titles = {
+        overview: 'Overview',
+        hardware: 'Hardware',
+        storage: 'Storage',
+        network: 'Network',
+        alerts: 'Alerts',
+        export: 'Export'
+      };
+      const descriptions = {
+        overview: 'Real-time diagnostics and system health',
+        hardware: 'CPU, memory, and GPU information',
+        storage: 'Disk drives and storage capacity',
+        network: 'Network adapters and connectivity',
+        alerts: 'Health warnings and recent status history',
+        export: 'Download or save your diagnostics report'
+      };
+
+      sectionTitle.textContent = titles[section] || 'Overview';
+      sectionDesc.textContent = descriptions[section] || '';
+
+      if (!currentReport) {
+        contentArea.innerHTML = '<div class="panel"><p>Loading system data...</p></div>';
+        return;
+      }
+
+      switch (section) {
+        case 'overview': renderOverview(currentReport); break;
+        case 'hardware': renderHardware(currentReport); break;
+        case 'storage': renderStorage(currentReport); break;
+        case 'network': renderNetwork(currentReport); break;
+        case 'alerts': renderAlerts(currentReport); break;
+        case 'export': renderExport(); break;
+        default: renderOverview(currentReport);
+      }
+    }
+
+    // ============ THEME ============
+    function applyTheme(theme) {
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light', isLight);
+      localStorage.setItem('pc-check-theme', theme);
+    }
+
+    // ============ EVENT LISTENERS ============
+    navItems.forEach((item) => {
+      item.addEventListener('click', () => renderSection(item.dataset.section));
+    });
+
+    refreshBtn.addEventListener('click', loadSystemData);
+    themeToggleSidebar.addEventListener('click', () => {
+      const nextTheme = document.body.classList.contains('light') ? 'dark' : 'light';
+      applyTheme(nextTheme);
+    });
+
+    // ============ INITIALIZATION ============
+    const savedTheme = localStorage.getItem('pc-check-theme') || 'dark';
+    applyTheme(savedTheme);
+    loadSystemData();
+  </script>
+</body>
+</html>
