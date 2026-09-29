@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Security Audit Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #94a3b8;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.6);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: rgba(51, 65, 85, 0.8);
+            color: #e2e8f0;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(71, 85, 105, 0.8);
+            border-color: rgba(148, 163, 184, 0.5);
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-box {
+            background: rgba(51, 65, 85, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .progress-container {
+            margin-top: 16px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .status-text {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .summary-card .number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 4px;
+        }
+
+        .summary-card .label {
+            color: #94a3b8;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(148, 163, 184, 0.1);
+            overflow-x: auto;
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: #cbd5e1;
+            border-bottom-color: rgba(56, 189, 248, 0.5);
+        }
+
+        .tab-btn.active {
+            color: #38bdf8;
+            border-bottom-color: #38bdf8;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .table-container {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            background: rgba(30, 41, 59, 0.8);
+            border-bottom: 2px solid rgba(148, 163, 184, 0.2);
+        }
+
+        th {
+            padding: 16px;
+            text-align: left;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            color: #cbd5e1;
+        }
+
+        tbody tr:hover {
+            background: rgba(51, 65, 85, 0.4);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .category-cheat {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .category-debug {
+            background: rgba(249, 115, 22, 0.2);
+            color: #fed7aa;
+        }
+
+        .category-remote {
+            background: rgba(168, 85, 247, 0.2);
+            color: #e9d5ff;
+        }
+
+        .category-script {
+            background: rgba(34, 197, 94, 0.2);
+            color: #bbf7d0;
+        }
+
+        .category-other {
+            background: rgba(59, 130, 246, 0.2);
+            color: #bfdbfe;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #64748b;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .reason-text {
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+        .timestamp {
+            color: #94a3b8;
+            font-size: 12px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .path-text {
+            color: #64748b;
+            font-size: 11px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: rgba(51, 65, 85, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: #94a3b8;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: rgba(71, 85, 105, 0.8);
+            color: #cbd5e1;
+        }
+
+        .alert {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            color: #fca5a5;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .controls {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 PC Security Audit Dashboard</h1>
+            <p>Scan your Windows system for suspicious files, exploit executors, and cheat tools</p>
+
+            <div class="controls">
+                <button class="btn btn-primary" id="scanBtn" onclick="startScan()">
+                    <span>▶</span> Start Scan
+                </button>
+                <button class="btn btn-secondary" id="exportJsonBtn" onclick="exportJSON()" disabled>
+                    📋 Export JSON
+                </button>
+                <button class="btn btn-secondary" id="exportTxtBtn" onclick="exportTXT()" disabled>
+                    📄 Export TXT
+                </button>
+            </div>
+
+            <div class="status-box" id="statusBox" style="display: none;">
+                <div class="progress-label">
+                    <span id="progressLabel">Initializing scan...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+                <div class="status-text" id="statusText">Preparing to scan...</div>
+            </div>
+        </div>
+
+        <div class="alert" id="alertBox"></div>
+
+        <div class="summary-grid" id="summaryGrid" style="display: none;">
+            <div class="summary-card">
+                <div class="number" id="totalCount">0</div>
+                <div class="label">Total Suspicious</div>
+            </div>
+            <div class="summary-card">
+                <div class="number" id="prefetchCount">0</div>
+                <div class="label">Prefetch</div>
+            </div>
+            <div class="summary-card">
+                <div class="number" id="recentCount">0</div>
+                <div class="label">Recent Files</div>
+            </div>
+            <div class="summary-card">
+                <div class="number" id="tempCount">0</div>
+                <div class="label">Temp Files</div>
+            </div>
+            <div class="summary-card">
+                <div class="number" id="programCount">0</div>
+                <div class="label">Program Files</div>
+            </div>
+            <div class="summary-card">
+                <div class="number" id="startupCount">0</div>
+                <div class="label">Startup Items</div>
+            </div>
+        </div>
+
+        <div class="tabs" id="tabs" style="display: none;">
+            <button class="tab-btn active" onclick="showTab('summary')">Summary</button>
+            <button class="tab-btn" onclick="showTab('prefetch')">Prefetch</button>
+            <button class="tab-btn" onclick="showTab('recent')">Recent Files</button>
+            <button class="tab-btn" onclick="showTab('temp')">Temp Files</button>
+            <button class="tab-btn" onclick="showTab('programs')">Program Files</button>
+            <button class="tab-btn" onclick="showTab('startup')">Startup Items</button>
+            <button class="tab-btn" onclick="showTab('browser')">Browser History</button>
+        </div>
+
+        <!-- Summary Tab -->
+        <div class="tab-content active" id="tab-summary" style="display: none;">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Count</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Prefetch Tab -->
+        <div class="tab-content" id="tab-prefetch">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Executable</th>
+                            <th>Category</th>
+                            <th>Last Accessed</th>
+                            <th>Created</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prefetchTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Files Tab -->
+        <div class="tab-content" id="tab-recent">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Category</th>
+                            <th>Last Accessed</th>
+                            <th>Path</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Temp Files Tab -->
+        <div class="tab-content" id="tab-temp">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Category</th>
+                            <th>Last Accessed</th>
+                            <th>Directory</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tempTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Program Files Tab -->
+        <div class="tab-content" id="tab-programs">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Program</th>
+                            <th>Category</th>
+                            <th>Location</th>
+                            <th>Last Accessed</th>
+                        </tr>
+                    </thead>
+                    <tbody id="programsTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Startup Tab -->
+        <div class="tab-content" id="tab-startup">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Program</th>
+                            <th>Startup Folder</th>
+                            <th>Last Accessed</th>
+                        </tr>
+                    </thead>
+                    <tbody id="startupTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Browser History Tab -->
+        <div class="tab-content" id="tab-browser">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Browser</th>
+                            <th>Location</th>
+                            <th>Last Modified</th>
+                        </tr>
+                    </thead>
+                    <tbody id="browserTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResults = null;
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+                tab.style.display = 'none';
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            const selectedTab = document.getElementById(`tab-${tabName}`);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+                selectedTab.style.display = 'block';
+            }
+
+            // Mark button as active
+            event.target.classList.add('active');
+        }
+
+        function getCategoryColor(category) {
+            if (!category) return 'category-other';
+            const cat = category.toLowerCase();
+            if (cat.includes('cheat') || cat.includes('trainer') || cat.includes('hack')) return 'category-cheat';
+            if (cat.includes('debug') || cat.includes('debugger')) return 'category-debug';
+            if (cat.includes('remote')) return 'category-remote';
+            if (cat.includes('script')) return 'category-script';
+            return 'category-other';
+        }
+
+        function startScan() {
+            document.getElementById('scanBtn').disabled = true;
+            document.getElementById('statusBox').style.display = 'block';
+            document.getElementById('summaryGrid').style.display = 'none';
+            document.getElementById('tabs').style.display = 'none';
+
+            fetch('/api/scan', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        showAlert(`Error: ${data.error}`);
+                        document.getElementById('scanBtn').disabled = false;
+                        return;
+                    }
+                    monitorScan();
+                });
+        }
+
+        function monitorScan() {
+            const monitor = setInterval(() => {
+                fetch('/api/scan-status')
+                    .then(r => r.json())
+                    .then(data => {
+                        document.getElementById('progressFill').style.width = data.progress + '%';
+                        document.getElementById('progressPercent').textContent = data.progress + '%';
+                        document.getElementById('progressLabel').textContent = data.status;
+                        document.getElementById('statusText').textContent = data.status;
+
+                        if (!data.running) {
+                            clearInterval(monitor);
+                            document.getElementById('scanBtn').disabled = false;
+                            document.getElementById('exportJsonBtn').disabled = false;
+                            document.getElementById('exportTxtBtn').disabled = false;
+                            loadResults();
+                        }
+                    });
+            }, 500);
+        }
+
+        function loadResults() {
+            fetch('/api/results')
+                .then(r => r.json())
+                .then(data => {
+                    currentResults = data;
+                    displayResults(data);
+                })
+                .catch(e => showAlert(`Error loading results: ${e}`));
+        }
+
+        function displayResults(data) {
+            const stats = data.statistics || {};
+            const findings = data.findings || {};
+
+            // Update summary cards
+            document.getElementById('totalCount').textContent = stats.total_suspicious || 0;
+            document.getElementById('prefetchCount').textContent = stats.prefetch_suspicious || 0;
+            document.getElementById('recentCount').textContent = stats.recent_suspicious || 0;
+            document.getElementById('tempCount').textContent = stats.temp_suspicious || 0;
+            document.getElementById('programCount').textContent = stats.program_suspicious || 0;
+            document.getElementById('startupCount').textContent = stats.startup_suspicious || 0;
+
+            document.getElementById('summaryGrid').style.display = 'grid';
+            document.getElementById('tabs').style.display = 'flex';
+
+            // Populate Summary
+            let summaryHTML = `
+                <tr><td>Prefetch Executables</td><td>${stats.prefetch_suspicious || 0}</td><td>${stats.prefetch_suspicious > 0 ? '🔴 Suspicious' : '✅ Clean'}</td></tr>
+                <tr><td>Recent Files</td><td>${stats.recent_suspicious || 0}</td><td>${stats.recent_suspicious > 0 ? '🔴 Suspicious' : '✅ Clean'}</td></tr>
+                <tr><td>Temp Files</td><td>${stats.temp_suspicious || 0}</td><td>${stats.temp_suspicious > 0 ? '🔴 Suspicious' : '✅ Clean'}</td></tr>
+                <tr><td>Program Files</td><td>${stats.program_suspicious || 0}</td><td>${stats.program_suspicious > 0 ? '🔴 Suspicious' : '✅ Clean'}</td></tr>
+                <tr><td>Startup Items</td><td>${stats.startup_suspicious || 0}</td><td>${stats.startup_suspicious > 0 ? '🔴 Suspicious' : '✅ Clean'}</td></tr>
+            `;
+            document.getElementById('summaryTable').innerHTML = summaryHTML;
+
+            // Populate Prefetch
+            const prefetch = findings.prefetch_suspicious || [];
+            let prefetchHTML = '';
+            if (prefetch.length === 0) {
+                prefetchHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 40px;">✅ No suspicious prefetch executables found</td></tr>';
+            } else {
+                prefetch.forEach(item => {
+                    prefetchHTML += `
+                        <tr>
+                            <td>${item.executable}</td>
+                            <td><span class="category-badge ${getCategoryColor(item.category)}">${item.category || 'Unknown'}</span></td>
+                            <td><span class="timestamp">${item.times?.accessed || 'N/A'}</span></td>
+                            <td><span class="timestamp">${item.times?.created || 'N/A'}</span></td>
+                            <td><button class="copy-btn" onclick="copyToClipboard('${item.path}')">Copy</button></td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('prefetchTable').innerHTML = prefetchHTML;
+
+            // Populate Recent
+            const recent = findings.recent_suspicious || [];
+            let recentHTML = '';
+            if (recent.length === 0) {
+                recentHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 40px;">✅ No suspicious recent files found</td></tr>';
+            } else {
+                recent.forEach(item => {
+                    recentHTML += `
+                        <tr>
+                            <td>${item.name}</td>
+                            <td><span class="category-badge ${getCategoryColor(item.category)}">${item.category || 'Unknown'}</span></td>
+                            <td><span class="timestamp">${item.times?.accessed || 'N/A'}</span></td>
+                            <td><span class="path-text">${item.path}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('recentTable').innerHTML = recentHTML;
+
+            // Populate Temp
+            const temp = findings.temp_suspicious || [];
+            let tempHTML = '';
+            if (temp.length === 0) {
+                tempHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 40px;">✅ No suspicious temp files found</td></tr>';
+            } else {
+                temp.forEach(item => {
+                    tempHTML += `
+                        <tr>
+                            <td>${item.name}</td>
+                            <td><span class="category-badge ${getCategoryColor(item.category)}">${item.category || 'Unknown'}</span></td>
+                            <td><span class="timestamp">${item.times?.accessed || 'N/A'}</span></td>
+                            <td><span class="path-text">${item.directory || 'N/A'}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('tempTable').innerHTML = tempHTML;
+
+            // Populate Programs
+            const programs = findings.program_files_suspicious || [];
+            let programsHTML = '';
+            if (programs.length === 0) {
+                programsHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 40px;">✅ No suspicious programs found</td></tr>';
+            } else {
+                programs.forEach(item => {
+                    programsHTML += `
+                        <tr>
+                            <td>${item.name}</td>
+                            <td><span class="category-badge ${getCategoryColor(item.category)}">${item.category || 'Unknown'}</span></td>
+                            <td><span class="path-text">${item.location || 'N/A'}</span></td>
+                            <td><span class="timestamp">${item.times?.accessed || 'N/A'}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('programsTable').innerHTML = programsHTML;
+
+            // Populate Startup
+            const startup = findings.startup_suspicious || [];
+            let startupHTML = '';
+            if (startup.length === 0) {
+                startupHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 40px;">✅ No suspicious startup items found</td></tr>';
+            } else {
+                startup.forEach(item => {
+                    startupHTML += `
+                        <tr>
+                            <td>${item.name}</td>
+                            <td><span class="path-text">${item.folder || 'N/A'}</span></td>
+                            <td><span class="timestamp">${item.times?.accessed || 'N/A'}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('startupTable').innerHTML = startupHTML;
+
+            // Populate Browser
+            const browser = findings.browser_history || [];
+            let browserHTML = '';
+            if (browser.length === 0) {
+                browserHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 40px;">No browser history data available</td></tr>';
+            } else {
+                browser.forEach(item => {
+                    browserHTML += `
+                        <tr>
+                            <td>${item.browser}</td>
+                            <td><span class="path-text">${item.path}</span></td>
+                            <td><span class="timestamp">${item.times?.modified || 'N/A'}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('browserTable').innerHTML = browserHTML;
+
+            showTab('summary');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('Path copied to clipboard!', 'success');
+            });
+        }
+
+        function exportJSON() {
+            if (!currentResults) {
+                showAlert('No results to export');
+                return;
+            }
+            window.location.href = '/api/export/json';
+        }
+
+        function exportTXT() {
+            if (!currentResults) {
+                showAlert('No results to export');
+                return;
+            }
+            window.location.href = '/api/export/txt';
+        }
+
+        function showAlert(message, type = 'error') {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.textContent = message;
+            alertBox.className = `alert show`;
+            alertBox.style.background = type === 'success' 
+                ? 'rgba(34, 197, 94, 0.1)' 
+                : 'rgba(239, 68, 68, 0.1)';
+            alertBox.style.borderColor = type === 'success' 
+                ? 'rgba(34, 197, 94, 0.5)' 
+                : 'rgba(239, 68, 68, 0.5)';
+            alertBox.style.color = type === 'success' 
+                ? '#86efac' 
+                : '#fca5a5';
+
+            setTimeout(() => {
+                alertBox.className = 'alert';
+            }, 4000);
+        }
+
+        // Show welcome message
+        window.addEventListener('load', () => {
+            showAlert('Ready to scan! Click "Start Scan" to begin.', 'success');
+        });
+    </script>
+</body>
+</html>
