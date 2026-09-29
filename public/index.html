@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PC Check Tool</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Diagnostics Dashboard</p>
+          <h1>PC Check Tool</h1>
+        </div>
+        <button id="refreshBtn" class="primary-btn">Refresh Data</button>
+      </header>
+
+      <main class="content">
+        <section class="summary-grid" id="summaryGrid"></section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>System Overview</h2>
+            <button id="saveReportBtn" class="secondary-btn">Save Report</button>
+          </div>
+          <div id="systemOverview" class="info-grid"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Storage</h2>
+          <div id="storageTable" class="table-wrap"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Network</h2>
+          <div id="networkList" class="list-rows"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Top Processes</h2>
+          <div id="processTable" class="table-wrap"></div>
+        </section>
+
+        <section class="panel">
+          <h2>GPU</h2>
+          <div id="gpuList" class="list-rows"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
